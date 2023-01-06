@@ -26,7 +26,7 @@ func (s *Subject) Register(observer IObserver) {
 func (s *Subject) Remove(observer IObserver) {
 	for i, v := range s.observers {
 		if v == observer {
-			s.observers = append(s.observers[:i], s.observers[i:]...)
+			s.observers = append(s.observers[:i], s.observers[i+1:]...)
 		}
 	}
 }

@@ -7,8 +7,8 @@ import (
 )
 
 type IEventBus interface {
-	// on(eventName string, handler interface{})
-	// off(evnetName string, handler interface{})
+	// On(eventName string, handler interface{})
+	// Off(evnetName string, handler interface{})
 	// 订阅事件
 	Subscribe(eventName string, handler interface{}) error
 	// 取消订阅事件
@@ -50,6 +50,20 @@ func (b *AsyncEventBus) Subscribe(eventName string, handler interface{}) error {
 }
 
 func (b *AsyncEventBus) UnSubscribe(eventName string, handler interface{}) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	handlers, ok := b.handlers[eventName]
+	if !ok {
+		return fmt.Errorf("the eventName dosent's exist")
+	}
+	handlerFunc := reflect.ValueOf(handler)
+	for i, v := range handlers {
+		if v == handlerFunc {
+			handlers = append(handlers[:i], handlers[i+1:]...)
+			b.handlers[eventName] = handlers
+		}
+	}
 	return nil
 }
 
@@ -61,16 +75,15 @@ func (b *AsyncEventBus) Publish(eventName string, args ...interface{}) {
 	}
 
 	params := make([]reflect.Value, len(args))
-	for _, v := range args {
-		arg := reflect.ValueOf(v)
-		params = append(params, arg)
+	for i, v := range args {
+		params[i] = reflect.ValueOf(v)
 	}
 
-	// 	// handler := reflect.ValueOf(v)
-	// 	go v.Call(params)
+	for _, v := range handlers {
+		go v.Call(params)
+	}
+
+	// for i := range handlers {
+	// 	go handlers[i].Call(params)
 	// }
-
-	for i := range handlers {
-		go handlers[i].Call(params)
-	}
 }
